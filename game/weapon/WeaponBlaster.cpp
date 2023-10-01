@@ -103,8 +103,10 @@ bool rvWeaponBlaster::UpdateAttack ( void ) {
 
 	// If the player is pressing the fire button and they have enough ammo for a shot
 	// then start the shooting process.
+	//gameLocal.Printf("BLASTER: gameLocal.time: %f\tnexAttackTime: %f\n", gameLocal.time, nextAttackTime);
 	if ( wsfl.attack && gameLocal.time >= nextAttackTime ) {
 		// Save the time which the fire button was pressed
+		gameLocal.Printf("BLASTER: Made it here!\n");
 		if ( fireHeldTime == 0 ) {		
 			nextAttackTime = gameLocal.time + (fireRate * owner->PowerUpModifier ( PMOD_FIRERATE ));
 			fireHeldTime   = gameLocal.time;
@@ -427,7 +429,7 @@ stateResult_t rvWeaponBlaster::State_Fire ( const stateParms_t& parms ) {
 
 	
 			if ( gameLocal.time - fireHeldTime > chargeTime ) {	
-				Attack ( true, 1, spread, 0, 1.0f );
+				Attack ( true, 25, spread, 0, 0.1f );
 				PlayEffect ( "fx_chargedflash", barrelJointView, false );
 				PlayAnim( ANIMCHANNEL_ALL, "chargedfire", parms.blendFrames );
 			} else {

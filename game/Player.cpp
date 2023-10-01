@@ -119,6 +119,11 @@ const idEventDef EV_Player_AllowNewObjectives( "<allownewobjectives>" );
 
 // RAVEN END
 
+
+//ALEX STUFF:
+int energyTanks = 1;
+
+
 CLASS_DECLARATION( idActor, idPlayer )
 //	EVENT( EV_Player_HideDatabaseEntry,		idPlayer::Event_HideDatabaseEntry )
 	EVENT( EV_Player_ZoomIn,				idPlayer::Event_ZoomIn )
@@ -206,6 +211,7 @@ void idInventory::Clear( void ) {
 	armor				= 0;
 	maxarmor			= 0;
 	secretAreasDiscovered = 0;
+	maxEnergyTanks		= 0;
 
 	memset( ammo, 0, sizeof( ammo ) );
 
@@ -339,6 +345,7 @@ void idInventory::RestoreInventory( idPlayer *owner, const idDict &dict ) {
 	maxHealth		= dict.GetInt( "maxhealth", "100" );
 	armor			= dict.GetInt( "armor", "50" );
 	maxarmor		= dict.GetInt( "maxarmor", "100" );
+	maxEnergyTanks	= dict.GetInt( "maxenergytanks", "2");
 
 	// ammo
 	for( i = 0; i < MAX_AMMOTYPES; i++ ) {
@@ -404,6 +411,7 @@ void idInventory::Save( idSaveGame *savefile ) const {
 	savefile->WriteInt( powerups );
 	savefile->WriteInt( armor );
 	savefile->WriteInt( maxarmor );
+	savefile->WriteInt( maxEnergyTanks );
 
 	for( i = 0; i < MAX_AMMO; i++ ) {
 		savefile->WriteInt( ammo[ i ] );
@@ -484,6 +492,7 @@ void idInventory::Restore( idRestoreGame *savefile ) {
 	savefile->ReadInt( powerups );
 	savefile->ReadInt( armor );
 	savefile->ReadInt( maxarmor );
+	savefile->ReadInt( maxEnergyTanks );
 
 	for( i = 0; i < MAX_AMMO; i++ ) {
 		savefile->ReadInt( ammo[ i ] );
@@ -3395,6 +3404,7 @@ void idPlayer::UpdateHudStats( idUserInterface *_hud ) {
 	temp = _hud->State().GetInt ( "player_health", "-1" );
 	if ( temp != health ) {		
 		_hud->SetStateInt   ( "player_healthDelta", temp == -1 ? 0 : (temp - health) );
+		_hud->SetStateInt("player_tanks", energyTanks);
 		_hud->SetStateInt	( "player_health", health < -100 ? -100 : health );
 		_hud->SetStateFloat	( "player_healthpct", idMath::ClampFloat ( 0.0f, 1.0f, (float)health / (float)inventory.maxHealth ) );
 		_hud->HandleNamedEvent ( "updateHealth" );
@@ -3961,7 +3971,7 @@ void idPlayer::StopFiring( void ) {
 idPlayer::FireWeapon
 ===============
 */
-void idPlayer::FireWeapon( void ) {
+void idPlayer::FireWeapon( bool missile ) {
 	idMat3 axis;
 	idVec3 muzzle;
 
@@ -3981,6 +3991,7 @@ void idPlayer::FireWeapon( void ) {
 		return;
 	}
 
+
 	if ( !hiddenWeapon && weapon->IsReady() ) {
 		// cheap hack so in MP the LG isn't allowed to fire in the short lapse while it goes from Fire -> Idle before changing to another weapon
 		// this gimps the weapon a lil bit but is consistent with the visual feedback clients are getting since 1.0
@@ -3989,7 +4000,11 @@ void idPlayer::FireWeapon( void ) {
 		if ( !noFireWhileSwitching ) {
 			if ( weapon->AmmoInClip() || weapon->AmmoAvailable() ) {
 				pfl.attackHeld = true;
-				weapon->BeginAttack();
+				if (missile)
+				{
+					//gameLocal.Printf("Should be firing a missile now question mark?\n");
+				}
+				weapon->BeginAttack(missile);
 			} else {
 				pfl.attackHeld = false;
 				pfl.weaponFired = false;
@@ -4088,9 +4103,15 @@ bool idPlayer::Give( const char *statname, const char *value, bool dropped ) {
  		amount = atoi( value );
  		if ( amount ) {
  			health += amount;
+
+			energyTanks += health / boundaryHealth;
+			energyTanks = idMath::ClampInt(0, inventory.maxEnergyTanks, energyTanks );
+			health = health % boundaryHealth;
+			/*
  			if ( health > boundaryHealth ) {
  				health = boundaryHealth;
  			}
+			*/
 		}
 	} else if ( !idStr::Icmp( statname, "bonushealth" ) ) {
 		// allow health over max health
@@ -6108,9 +6129,9 @@ void idPlayer::Weapon_Combat( void ) {
 	// check for attack
 	pfl.weaponFired = false;
  	if ( !influenceActive ) {
- 		if ( ( usercmd.buttons & BUTTON_ATTACK ) && !weaponGone ) {
- 			FireWeapon();
- 		} else if ( oldButtons & BUTTON_ATTACK ) {
+ 		if ( ( ( usercmd.buttons & BUTTON_ATTACK ) || ( usercmd.buttons & BUTTON_ZOOM ) )&& !weaponGone ) {
+			FireWeapon((usercmd.buttons & BUTTON_ZOOM));
+ 		} else if ( ( oldButtons & BUTTON_ATTACK ) || (oldButtons & BUTTON_ZOOM) ) {
  			pfl.attackHeld = false;
  			weapon->EndAttack();
  		}
@@ -9284,7 +9305,7 @@ Called every tic for each player
 */
 void idPlayer::Think( void ) {
 	renderEntity_t *headRenderEnt;
- 
+	
 	if ( talkingNPC ) {
 		if ( !talkingNPC.IsValid() ) {
 			talkingNPC = NULL;
@@ -9398,13 +9419,13 @@ void idPlayer::Think( void ) {
 		usercmd.upmove = 0;
 	}
 	
-	// zooming
+
 	bool zoom = (usercmd.buttons & BUTTON_ZOOM) && CanZoom();
 	if ( zoom != zoomed ) {
 		if ( zoom ) {
-			ProcessEvent ( &EV_Player_ZoomIn );
+			//ProcessEvent ( &EV_Player_ZoomIn );
 		} else {
-			ProcessEvent ( &EV_Player_ZoomOut );
+			//ProcessEvent ( &EV_Player_ZoomOut );
 		}
 
 		if ( vehicleController.IsDriving( ) ) {
@@ -10277,7 +10298,15 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 			}
 		}
 
-		if ( health <= 0 ) {
+		//ENERGY TANKS ALEX DEFINED
+		if (health <= 0 && energyTanks > 0)
+		{
+			health = inventory.maxHealth;
+			energyTanks--;
+			gameLocal.Printf("Energy Tank Used... %d remaining...", energyTanks);
+		}
+
+		if ( health <= 0 && energyTanks <= 0) {
 
 			if ( health < -999 ) {
 				health = -999;
@@ -11181,7 +11210,20 @@ idPlayer::Event_SetHealth
 =============
 */
 void idPlayer::Event_SetHealth( float newHealth ) {
-	health = idMath::ClampInt( 1 , inventory.maxHealth, newHealth );
+	//health = idMath::ClampInt( 1 , inventory.maxHealth, newHealth );
+	if (newHealth > inventory.maxHealth && energyTanks >= inventory.maxEnergyTanks)
+	{
+		health = idMath::ClampInt(1, inventory.maxHealth, newHealth);
+	}
+	else if (newHealth > inventory.maxHealth && energyTanks <= inventory.maxEnergyTanks)
+	{
+		energyTanks++;
+		Event_SetHealth(newHealth - inventory.maxHealth);
+	}
+	else if (newHealth < inventory.maxHealth)
+	{
+		health = newHealth;
+	}
 }
 /*
 =============
@@ -11813,9 +11855,9 @@ void idPlayer::LocalClientPredictionThink( void ) {
 	bool zoom = (usercmd.buttons & BUTTON_ZOOM) && CanZoom();
 	if ( zoom != zoomed ) {
 		if ( zoom ) {
-			ProcessEvent( &EV_Player_ZoomIn );
+			//ProcessEvent( &EV_Player_ZoomIn );
 		} else {
-			ProcessEvent( &EV_Player_ZoomOut );
+			//ProcessEvent( &EV_Player_ZoomOut );
 		}
 	}
 
@@ -11994,9 +12036,9 @@ void idPlayer::NonLocalClientPredictionThink( void ) {
 	bool zoom = (usercmd.buttons & BUTTON_ZOOM) && CanZoom();
 	if ( zoom != zoomed ) {
 		if ( zoom ) {
-			ProcessEvent( &EV_Player_ZoomIn );
+			//ProcessEvent( &EV_Player_ZoomIn );
 		} else {
-			ProcessEvent( &EV_Player_ZoomOut );
+			//ProcessEvent( &EV_Player_ZoomOut );
 		}
 	}
 

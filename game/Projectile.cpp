@@ -10,6 +10,7 @@
 #include "ai/AI_Manager.h"
 #include "Projectile.h"
 #include "spawner.h"
+//#include "ai/Monster_StroggMarine.cpp"
 
 /*
 ===============================================================================
@@ -891,6 +892,16 @@ bool idProjectile::Collide( const trace_t &collision, const idVec3 &velocity, bo
 				}
 			}	
 // RAVEN END
+
+			//ALEX-DEFINED CODE AAAAAAA
+			/*
+			if (ent->IsType(rvMonsterStroggMarine::GetClassType()))
+			{
+				rvMonsterStroggMarine* entStrogg = static_cast<rvMonsterStroggMarine*>(ent);
+				entStrogg->freeze();
+			}
+			*/
+
  			ent->Damage( this, owner, dir, damageDefName, damagePower, hitJoint );
 			
 			if( owner && owner->IsType( idPlayer::GetClassType() ) && ent->IsType( idActor::GetClassType() ) ) {

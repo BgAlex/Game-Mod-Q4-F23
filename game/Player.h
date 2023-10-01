@@ -265,6 +265,8 @@ public:
 //	idList<rvDatabaseEntry>	database;
 	
 	int						secretAreasDiscovered;
+
+	int						maxEnergyTanks;
 };
 
 class idPlayer : public idActor {
@@ -1013,7 +1015,7 @@ private:
 	void					LookAtKiller( idEntity *inflictor, idEntity *attacker );
 
 	void					StopFiring( void );
-	void					FireWeapon( void );
+	void					FireWeapon( bool missile );
 	void					Weapon_Combat( void );
 	void					Weapon_NPC( void );
 	void					Weapon_GUI( void );

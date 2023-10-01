@@ -70,8 +70,15 @@ private:
 	CLASS_STATES_PROTOTYPE ( rvMonsterStroggMarine );
 };
 
+
 CLASS_DECLARATION( idAI, rvMonsterStroggMarine )
 END_CLASS
+
+/*
+public:
+	void				freezeEnemy							( void );
+*/
+
 
 /*
 ================
@@ -164,6 +171,10 @@ rvMonsterStroggMarine::OnStopMoving
 void rvMonsterStroggMarine::OnStopMoving ( aiMoveCommand_t oldMoveCommand ) {
 	//MCG - once you get to your position, attack immediately (no pause)
 	//FIXME: Restrict this some?  Not after animmoves?  Not if move was short?  Only in certain tactical states?
+	combat.tacticalCurrent == AITACTICAL_NONE;
+
+	//BREAKING STUFF
+	/*
 	if ( GetEnemy() )
 	{
 		if ( combat.tacticalCurrent == AITACTICAL_HIDE )
@@ -182,6 +193,7 @@ void rvMonsterStroggMarine::OnStopMoving ( aiMoveCommand_t oldMoveCommand ) {
 			actionSprayAttack.timer.Clear( actionTime );
 		}
 	}
+	*/
 }
 
 /*
@@ -431,7 +443,7 @@ stateResult_t rvMonsterStroggMarine::State_Torso_RollAttack ( const stateParms_t
 		TORSO_ROLLATTACK_ROLL,
 		TORSO_ROLLATTACK_FACE,
 		TORSO_ROLLATTACK_FIRE,
-		TORSO_ROLLATTACK_FINISH
+		TORSO_ROLLATTACK_FINISH,
 	};
 
 	TurnToward(enemy.lastKnownPosition);
@@ -517,6 +529,7 @@ stateResult_t rvMonsterStroggMarine::State_Torso_RangedAttack ( const stateParms
 	};
 	//TurnToward(enemy.lastKnownPosition);
 	switch ( parms.stage ) {
+
 		case STAGE_START:
 			// If moving switch to the moving ranged attack (torso only)
 			if ( move.fl.moving && move.fl.running && !actionRangedAttack.fl.overrideLegs && FacingIdeal() ) {
@@ -751,3 +764,11 @@ stateResult_t rvMonsterStroggMarine::State_Torso_SprayAttack ( const stateParms_
 	}
 	return SRESULT_ERROR; 
 }
+
+/*
+//ALEX DEFINED FUNCTIONS
+void rvMonsterStroggMarine::freezeEnemy( void )
+{
+	combat.tacticalCurrent = AITACTICAL_NONE;
+}
+*/

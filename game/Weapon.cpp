@@ -957,6 +957,48 @@ void rvWeapon::InitDefs( void ) {
 		wfl.attackAltHitscan = true;
 	} 
 
+	//Missile Def Time
+	missileDict.Clear();
+	if (spawnArgs.GetString("def_missile_projectile", "", &name) && *name) 
+	{
+		def = gameLocal.FindEntityDef(name, false);
+		if (!def) {
+			gameLocal.Warning("Unknown missile projectile '%s' for weapon '%s'", name, weaponDef->GetName());
+		}
+		else {
+			spawnclass = def->dict.GetString("spawnclass");
+			cls = idClass::GetClass(spawnclass);
+			if (!cls || !cls->IsType(idProjectile::GetClassType())) {
+				gameLocal.Warning("Invalid spawnclass '%s' for missile projectile '%s' (used by weapon '%s')", spawnclass, name, weaponDef->GetName());
+			}
+			else {
+				missileDict = def->dict;
+			}
+		}
+	}
+
+
+	//Alt Missile Def Time
+	altMissileDict.Clear();
+	if (spawnArgs.GetString("def_altmissile_projectile", "", &name) && *name)
+	{
+		def = gameLocal.FindEntityDef(name, false);
+		if (!def) {
+			gameLocal.Warning("Unknown alt missile projectile '%s' for weapon '%s'", name, weaponDef->GetName());
+		}
+		else {
+			spawnclass = def->dict.GetString("spawnclass");
+			cls = idClass::GetClass(spawnclass);
+			if (!cls || !cls->IsType(idProjectile::GetClassType())) {
+				gameLocal.Warning("Invalid spawnclass '%s' for alt missile projectile '%s' (used by weapon '%s')", spawnclass, name, weaponDef->GetName());
+			}
+			else {
+				altMissileDict = def->dict;
+			}
+		}
+	}
+
+
 	// get the melee damage def
 	meleeDistance = spawnArgs.GetFloat( "melee_distance" );
 	if ( spawnArgs.GetString( "def_melee", "", &name ) && *name ) {
@@ -1487,6 +1529,22 @@ void rvWeapon::Restore ( idRestoreGame *savefile ) {
 		}
 	}
 
+	// Missile def
+	missileDict.Clear();
+	def = gameLocal.FindEntityDef(spawnArgs.GetString("def_missile_projectile"), false);
+	//wfl.attackHitscan = false;
+	if (def) {
+		missileDict = def->dict;
+	}
+
+	// Alt Missile def
+	altMissileDict.Clear();
+	def = gameLocal.FindEntityDef(spawnArgs.GetString("def_altmissile_projectile"), false);
+	//wfl.attackHitscan = false;
+	if (def) {
+		altMissileDict = def->dict;
+	}
+
 	// Brass Def
 	def = gameLocal.FindEntityDef( spawnArgs.GetString( "def_ejectBrass" ), false );
 	if ( def ) {
@@ -1899,7 +1957,9 @@ void rvWeapon::OwnerDied( void ) {
 rvWeapon::BeginAttack
 ================
 */
-void rvWeapon::BeginAttack( void ) {
+void rvWeapon::BeginAttack( bool missile ) {
+
+	wsfl.missile = missile;
 	wsfl.attack = true;
 
 	if ( status != WP_OUTOFAMMO ) {
@@ -1914,6 +1974,7 @@ rvWeapon::EndAttack
 */
 void rvWeapon::EndAttack( void ) {
 	wsfl.attack = false;
+	wsfl.missile = false;
 }
 
 /*
@@ -2502,7 +2563,7 @@ void rvWeapon::AddToClip ( int amount ) {
 rvWeapon::Attack
 ================
 */
-void rvWeapon::Attack( bool altAttack, int num_attacks, float spread, float fuseOffset, float power ) {
+void rvWeapon::Attack( int altAttack, int num_attacks, float spread, float fuseOffset, float power ) {
 	idVec3 muzzleOrigin;
 	idMat3 muzzleAxis;
 	
@@ -2591,9 +2652,31 @@ void rvWeapon::Attack( bool altAttack, int num_attacks, float spread, float fuse
 	
 	// The attack is either a hitscan or a launched projectile, do that now.
 	if ( !gameLocal.isClient ) {
-		idDict& dict = altAttack ? attackAltDict : attackDict;
+		idDict dict = attackDict;
+
+		switch (altAttack)
+		{
+			case 0:
+				dict = attackDict;
+				break;
+			case 1:
+				dict = attackAltDict;
+				break;
+			case 2:
+				dict = missileDict;
+				break;
+			case 3:
+				dict = altMissileDict;
+				break;
+		}
+
 		power *= owner->PowerUpModifier( PMOD_PROJECTILE_DAMAGE );
-		if ( altAttack ? wfl.attackAltHitscan : wfl.attackHitscan ) {
+
+		if (altAttack > 1)
+		{
+			LaunchProjectiles(dict, muzzleOrigin, muzzleAxis, num_attacks, spread, fuseOffset, power);
+		}
+		else if ( altAttack == 1 ? wfl.attackAltHitscan : wfl.attackHitscan ) {
 			Hitscan( dict, muzzleOrigin, muzzleAxis, num_attacks, spread, power );
 		} else {
 			LaunchProjectiles( dict, muzzleOrigin, muzzleAxis, num_attacks, spread, fuseOffset, power );
@@ -2671,7 +2754,8 @@ void rvWeapon::LaunchProjectiles ( idDict& dict, const idVec3& muzzleOrigin, con
 
 		// Make sure it spawned
 		if ( !ent ) {
-			gameLocal.Error( "failed to spawn projectile for weapon '%s'", weaponDef->GetName ( ) );
+			altMissileDict.Print();
+			gameLocal.Error( "game failed to spawn projectile for weapon '%s'", weaponDef->GetName ( ) );
 		}
 		
 		assert ( ent->IsType( idProjectile::GetClassType() ) );

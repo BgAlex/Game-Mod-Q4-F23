@@ -139,7 +139,7 @@ public:
 	virtual bool		ClientReceiveEvent			( int event, int time, const idBitMsg &msg );
 	virtual void		ClientStale					( void );
 	virtual void		ClientUnstale				( void ) { }
-	virtual void		Attack						( bool altFire, int num_attacks, float spread, float fuseOffset, float power );
+	virtual void		Attack						( bool altFire, int num_attacks, float spread, float fuseOffset, float power);
 	virtual void		GetDebugInfo				( debugInfoProc_t proc, void* userData );
 	virtual void		SpectatorCycle				( void ) { }
 	virtual bool		NoFireWhileSwitching		( void ) const { return false; }

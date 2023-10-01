@@ -139,7 +139,7 @@ public:
 	virtual bool		ClientReceiveEvent			( int event, int time, const idBitMsg &msg );
 	virtual void		ClientStale					( void );
 	virtual void		ClientUnstale				( void ) { }
-	virtual void		Attack						( bool altFire, int num_attacks, float spread, float fuseOffset, float power );
+	virtual void		Attack						( int altFire, int num_attacks, float spread, float fuseOffset, float power );
 	virtual void		GetDebugInfo				( debugInfoProc_t proc, void* userData );
 	virtual void		SpectatorCycle				( void ) { }
 	virtual bool		NoFireWhileSwitching		( void ) const { return false; }
@@ -174,7 +174,7 @@ public:
 	void				SetPushVelocity				( const idVec3 &pushVelocity );
 	void				Reload						( void );
 	void				OwnerDied					( void );
-	void				BeginAttack					( void );
+	void				BeginAttack					( bool missile );
 	void				EndAttack					( void );
 	bool				IsReady						( void ) const;
 	bool				IsReloading					( void ) const;
@@ -281,6 +281,7 @@ public:
 		bool		lowerWeapon			:1;
 		bool		flashlight			:1;
 		bool		zoom				:1;
+		bool		missile				:1;
 	} wsfl;		
 	
 	// Generic flags
@@ -431,6 +432,9 @@ private:
 
 	// multiplayer hitscans
 	int						hitscanAttackDef;
+
+	idDict					missileDict;
+	idDict					altMissileDict;
 
 	CLASS_STATES_PROTOTYPE ( rvWeapon );
 };

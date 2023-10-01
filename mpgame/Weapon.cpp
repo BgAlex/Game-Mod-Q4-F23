@@ -2599,6 +2599,7 @@ void rvWeapon::Attack( bool altAttack, int num_attacks, float spread, float fuse
 		if ( altAttack ? wfl.attackAltHitscan : wfl.attackHitscan ) {
 			Hitscan( dict, muzzleOrigin, muzzleAxis, num_attacks, spread, power );
 		} else {
+			printf("Projectile about to be launched");
 			LaunchProjectiles( dict, muzzleOrigin, muzzleAxis, num_attacks, spread, fuseOffset, power );
 		}
 		//asalmon:  changed to keep stats even in single player 
@@ -2666,7 +2667,7 @@ void rvWeapon::LaunchProjectiles ( idDict& dict, const idVec3& muzzleOrigin, con
 
 		// Make sure it spawned
 		if ( !ent ) {
-			gameLocal.Error( "failed to spawn projectile for weapon '%s'", weaponDef->GetName ( ) );
+			gameLocal.Error( "mp failed to spawn projectile for weapon '%s'", weaponDef->GetName ( ) );
 		}
 		
 		assert ( ent->IsType( idProjectile::GetClassType() ) );
