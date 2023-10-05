@@ -1962,7 +1962,7 @@ void rvWeapon::BeginAttack( bool missile ) {
 	wsfl.missile = missile;
 	wsfl.attack = true;
 
-	if ( status != WP_OUTOFAMMO ) {
+	if ( status != WP_OUTOFAMMO || !missile) {
 		lastAttack = gameLocal.time;
 	}
 }
@@ -2577,15 +2577,46 @@ void rvWeapon::Attack( int altAttack, int num_attacks, float spread, float fuseO
 	}
 
 	// avoid all ammo considerations on an MP client
-	if ( !gameLocal.isClient ) {
+	if (!gameLocal.isClient) {
 		// check if we're out of ammo or the clip is empty
-		int ammoAvail = owner->inventory.HasAmmo( ammoType, ammoRequired );
+
+		int ammoUsed;
+
+		switch (altAttack)
+		{
+			case 0:
+				ammoUsed = 0;
+				break;
+			case 1:
+				ammoUsed = 0;
+				break;
+			case 2:
+				ammoUsed = 1;
+				break;
+			case 3:
+				ammoUsed = 5;
+				break;
+		}
+			
+
+		int ammoAvail = owner->inventory.HasAmmo( ammoType, ammoUsed );
+		if (ammoAvail == 1 && altAttack != 3)
+		{
+			return;
+		}
+
+		if (altAttack < 2)
+		{
+			ammoAvail = -1;
+		}
 		if ( !ammoAvail || ( ( clipSize != 0 ) && ( ammoClip <= 0 ) ) ) {
 			return;
 		}
 
-		owner->inventory.UseAmmo( ammoType, ammoRequired );
-		if ( clipSize && ammoRequired ) {
+		
+
+		owner->inventory.UseAmmo( ammoType, ammoUsed );
+		if ( clipSize && ammoUsed ) {
  			clipPredictTime = gameLocal.time;	// mp client: we predict this. mark time so we're not confused by snapshots
 			ammoClip -= 1;
 		}

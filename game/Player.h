@@ -267,6 +267,7 @@ public:
 	int						secretAreasDiscovered;
 
 	int						maxEnergyTanks;
+	int						max_Missiles_mod;
 };
 
 class idPlayer : public idActor {

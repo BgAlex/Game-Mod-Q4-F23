@@ -212,6 +212,7 @@ void idInventory::Clear( void ) {
 	maxarmor			= 0;
 	secretAreasDiscovered = 0;
 	maxEnergyTanks		= 0;
+	max_Missiles_mod	= 0;
 
 	memset( ammo, 0, sizeof( ammo ) );
 
@@ -346,6 +347,7 @@ void idInventory::RestoreInventory( idPlayer *owner, const idDict &dict ) {
 	armor			= dict.GetInt( "armor", "50" );
 	maxarmor		= dict.GetInt( "maxarmor", "100" );
 	maxEnergyTanks	= dict.GetInt( "maxenergytanks", "2");
+	max_Missiles_mod = dict.GetInt("maxmissilesmod","0");
 
 	// ammo
 	for( i = 0; i < MAX_AMMOTYPES; i++ ) {
@@ -412,6 +414,7 @@ void idInventory::Save( idSaveGame *savefile ) const {
 	savefile->WriteInt( armor );
 	savefile->WriteInt( maxarmor );
 	savefile->WriteInt( maxEnergyTanks );
+	savefile->WriteInt( max_Missiles_mod );
 
 	for( i = 0; i < MAX_AMMO; i++ ) {
 		savefile->WriteInt( ammo[ i ] );
@@ -493,6 +496,7 @@ void idInventory::Restore( idRestoreGame *savefile ) {
 	savefile->ReadInt( armor );
 	savefile->ReadInt( maxarmor );
 	savefile->ReadInt( maxEnergyTanks );
+	savefile->ReadInt( max_Missiles_mod );
 
 	for( i = 0; i < MAX_AMMO; i++ ) {
 		savefile->ReadInt( ammo[ i ] );
@@ -1044,6 +1048,13 @@ int idInventory::HasAmmo( int index, int amount ) {
 	if ( ammo[ index ] < 0 ) {
 		return -1;
 	}
+
+	
+	if (amount > 1 && ammo[index] == amount)
+	{
+		return 0;
+	}
+	
 
 	// return how many shots we can fire
 	return ammo[ index ] / amount;
@@ -3372,17 +3383,27 @@ void idPlayer::UpdateHudAmmo( idUserInterface *_hud ) {
 		_hud->SetStateString( "player_ammo", "-1" );
 		_hud->SetStateString( "player_totalammo", "-1" );
 		_hud->SetStateFloat ( "player_ammopct", 1.0f );
-	} else if ( weapon->ClipSize ( ) && !gameLocal.isMultiplayer ) {
+	}
+	else if ( weapon->ClipSize ( ) && !gameLocal.isMultiplayer ) 
+	{
 		_hud->SetStateInt ( "player_clip_size", weapon->ClipSize() );
 		_hud->SetStateFloat ( "player_ammopct", (float)inclip / (float)weapon->ClipSize ( ) );
-		if ( weapon->ClipSize ( )==1) {
-			_hud->SetStateInt ( "player_totalammo", ammoamount );
+		if ( weapon->ClipSize ( )==1)
+		{
+			//_hud->SetStateInt ( "player_totalammo", ammoamount );
+			_hud->SetStateInt("player_totalammo", weapon->maxAmmo + inventory.max_Missiles_mod - 1);
+			_hud->SetStateInt("player_ammo2", ammoamount - 1);
+			
 		}
-		else {
-			_hud->SetStateInt ( "player_totalammo", ammoamount - inclip );
+		else
+		{
+			_hud->SetStateInt("player_totalammo", weapon->maxAmmo + inventory.max_Missiles_mod);
+			//_hud->SetStateInt("player_ammo", ammoamount);
 		}
-		_hud->SetStateInt ( "player_ammo", inclip );
-	} else {
+		
+	} 
+	else 
+	{
 		_hud->SetStateFloat ( "player_ammopct", (float)ammoamount / (float)weapon->maxAmmo );
 		_hud->SetStateInt ( "player_totalammo", ammoamount );
 		_hud->SetStateInt ( "player_ammo", -1 );

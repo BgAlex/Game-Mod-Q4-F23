@@ -318,10 +318,11 @@ stateResult_t rvWeaponRailgun::State_Fire ( const stateParms_t& parms ) {
 			//gameLocal.Printf("Fire Held Time: %d\nCharge Time: %d\n", fireHeldTime, chargeTime);
 			if (missile)
 			{
+
 				if (gameLocal.time - fireHeldTime > chargeTime)
 				{
 					//3 means Super Missile
-					Attack(3, 1, 1, 0, 15.0f);
+					Attack(3, 1, 1, 0, 4.0f);
 					PlayAnim(ANIMCHANNEL_ALL, "fire", parms.blendFrames);
 					missile = false;
 				}
@@ -338,7 +339,7 @@ stateResult_t rvWeaponRailgun::State_Fire ( const stateParms_t& parms ) {
 			{
 				if (gameLocal.time - fireHeldTime > chargeTime)
 				{
-					Attack(true, 1, 1, 0, 15.0f);
+					Attack(true, 1, 1, 0, 10.0f);
 					//PlayEffect("fx_chargedflash", barrelJointView, false);
 					PlayAnim(ANIMCHANNEL_ALL, "fire", parms.blendFrames);
 				}
