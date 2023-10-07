@@ -359,11 +359,12 @@ stateResult_t rvWeaponBlaster::State_Charge ( const stateParms_t& parms ) {
 		CHARGE_INIT,
 		CHARGE_WAIT,
 	};	
+	
 	switch ( parms.stage ) {
 		case CHARGE_INIT:
 			viewModel->SetShaderParm ( BLASTER_SPARM_CHARGEGLOW, chargeGlow[0] );
 			StartSound ( "snd_charge", SND_CHANNEL_ITEM, 0, false, NULL );
-			PlayCycle( ANIMCHANNEL_ALL, "charging", parms.blendFrames );
+			//PlayCycle( ANIMCHANNEL_ALL, "charging", parms.blendFrames );
 			return SRESULT_STAGE ( CHARGE_WAIT );
 			
 		case CHARGE_WAIT:	
@@ -372,7 +373,8 @@ stateResult_t rvWeaponBlaster::State_Charge ( const stateParms_t& parms ) {
 				f = (float)(gameLocal.time - fireHeldTime) / (float)chargeTime;
 				f = chargeGlow[0] + f * (chargeGlow[1] - chargeGlow[0]);
 				f = idMath::ClampFloat ( chargeGlow[0], chargeGlow[1], f );
-				viewModel->SetShaderParm ( BLASTER_SPARM_CHARGEGLOW, f );
+				//viewModel->SetShaderParm ( BLASTER_SPARM_CHARGEGLOW, f );
+				PlayEffect("fx_normalflash", barrelJointView, false);
 				
 				if ( !(wsfl.attack || wsfl.missile)) {
 					SetState ( "Fire", 0 );
@@ -397,9 +399,12 @@ stateResult_t rvWeaponBlaster::State_Charged ( const stateParms_t& parms ) {
 		CHARGED_INIT,
 		CHARGED_WAIT,
 	};	
+	
+
+	
 	switch ( parms.stage ) {
 		case CHARGED_INIT:		
-			viewModel->SetShaderParm ( BLASTER_SPARM_CHARGEGLOW, 1.0f  );
+			//viewModel->SetShaderParm ( BLASTER_SPARM_CHARGEGLOW, 1.0f  );
 
 			StopSound ( SND_CHANNEL_ITEM, false );
 			StartSound ( "snd_charge_loop", SND_CHANNEL_ITEM, 0, false, NULL );
@@ -407,6 +412,7 @@ stateResult_t rvWeaponBlaster::State_Charged ( const stateParms_t& parms ) {
 			return SRESULT_STAGE(CHARGED_WAIT);
 			
 		case CHARGED_WAIT:
+			PlayEffect("fx_chargedflash", barrelJointView, false);
 			if ( !(wsfl.attack || wsfl.missile)) {
 				fireForced = true;
 				SetState ( "Fire", 0 );
@@ -431,7 +437,7 @@ stateResult_t rvWeaponBlaster::State_Fire ( const stateParms_t& parms ) {
 		case FIRE_INIT:	
 
 			StopSound ( SND_CHANNEL_ITEM, false );
-			viewModel->SetShaderParm ( BLASTER_SPARM_CHARGEGLOW, 0 );
+			//viewModel->SetShaderParm ( BLASTER_SPARM_CHARGEGLOW, 0 );
 			//don't fire if we're targeting a gui.
 			idPlayer* player;
 			player = gameLocal.GetLocalPlayer();
@@ -456,15 +462,15 @@ stateResult_t rvWeaponBlaster::State_Fire ( const stateParms_t& parms ) {
 				if (gameLocal.time - fireHeldTime > chargeTime)
 				{
 					Attack(3, 1, 1, 0, 4.0f);
-					PlayEffect("fx_chargedflash", barrelJointView, false);
-					PlayAnim(ANIMCHANNEL_ALL, "chargedfire", parms.blendFrames);
+					PlayAnim(ANIMCHANNEL_ALL, "fire", parms.blendFrames);
+					PlayEffect("fx_normalflash", barrelJointView, false);
 					missile = false;
 				}
 				else
 				{
 					Attack(2, 1, 1, 0, 1.0f);
-					PlayEffect("fx_normalflash", barrelJointView, false);
 					PlayAnim(ANIMCHANNEL_ALL, "fire", parms.blendFrames);
+					PlayEffect("fx_normalflash", barrelJointView, false);
 					missile = false;
 				}
 			}
@@ -473,14 +479,15 @@ stateResult_t rvWeaponBlaster::State_Fire ( const stateParms_t& parms ) {
 				if (gameLocal.time - fireHeldTime > chargeTime)
 				{
 					Attack(1, 1, 1, 0, 1.0f);
-					PlayEffect("fx_chargedflash", barrelJointView, false);
-					PlayAnim(ANIMCHANNEL_ALL, "chargedfire", parms.blendFrames);
+					PlayAnim(ANIMCHANNEL_ALL, "fire", parms.blendFrames);
+					PlayEffect("fx_normalflash", barrelJointView, false);
 				}
 				else
 				{
 					Attack(0, 1, 1, 0, 1.0f);
-					PlayEffect("fx_normalflash", barrelJointView, false);
 					PlayAnim(ANIMCHANNEL_ALL, "fire", parms.blendFrames);
+					PlayEffect("fx_normalflash", barrelJointView, false);
+
 				}
 			}
 			fireHeldTime = 0;
@@ -488,8 +495,8 @@ stateResult_t rvWeaponBlaster::State_Fire ( const stateParms_t& parms ) {
 			return SRESULT_STAGE(FIRE_WAIT);
 		
 		case FIRE_WAIT:
-			if ( AnimDone ( ANIMCHANNEL_ALL, 4 ) ) {
-				SetState ( "Idle", 4 );
+			if ( AnimDone ( ANIMCHANNEL_ALL, 60 ) ) {
+				SetState ( "Idle", 0 );
 				return SRESULT_DONE;
 			}
 			if ( UpdateFlashlight ( ) || UpdateAttack ( ) ) {
@@ -549,7 +556,7 @@ stateResult_t rvWeaponBlaster::State_Reload(const stateParms_t& parms) {
 		}
 
 		SetStatus(WP_RELOAD);
-		//PlayAnim(ANIMCHANNEL_ALL, "reload", parms.blendFrames);
+		PlayAnim(ANIMCHANNEL_ALL, "reload", parms.blendFrames);
 		return SRESULT_STAGE(STAGE_WAIT);
 
 	case STAGE_WAIT:
