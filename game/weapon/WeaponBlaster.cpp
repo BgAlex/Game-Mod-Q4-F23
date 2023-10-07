@@ -40,6 +40,8 @@ private:
 	stateResult_t		State_Charged			( const stateParms_t& parms );
 	stateResult_t		State_Fire				( const stateParms_t& parms );
 	stateResult_t		State_Flashlight		( const stateParms_t& parms );
+
+	bool				missile;
 	
 	CLASS_STATES_PROTOTYPE ( rvWeaponBlaster );
 };
@@ -94,7 +96,7 @@ rvWeaponBlaster::UpdateAttack
 bool rvWeaponBlaster::UpdateAttack ( void ) {
 	// Clear fire forced
 	if ( fireForced ) {
-		if ( !wsfl.attack ) {
+		if ( !( wsfl.attack || wsfl.missile)) {
 			fireForced = false;
 		} else {
 			return false;
@@ -104,9 +106,9 @@ bool rvWeaponBlaster::UpdateAttack ( void ) {
 	// If the player is pressing the fire button and they have enough ammo for a shot
 	// then start the shooting process.
 	//gameLocal.Printf("BLASTER: gameLocal.time: %f\tnexAttackTime: %f\n", gameLocal.time, nextAttackTime);
-	if ( wsfl.attack && gameLocal.time >= nextAttackTime ) {
+	if ( (wsfl.attack || wsfl.missile) && gameLocal.time >= nextAttackTime ) {
+		missile = wsfl.missile;
 		// Save the time which the fire button was pressed
-		gameLocal.Printf("BLASTER: Made it here!\n");
 		if ( fireHeldTime == 0 ) {		
 			nextAttackTime = gameLocal.time + (fireRate * owner->PowerUpModifier ( PMOD_FIRERATE ));
 			fireHeldTime   = gameLocal.time;
@@ -124,7 +126,7 @@ bool rvWeaponBlaster::UpdateAttack ( void ) {
 
 		// If the fire button was let go but was pressed at one point then 
 		// release the shot.
-		if ( !wsfl.attack ) {
+		if ( !(wsfl.attack || wsfl.missile)) {
 			idPlayer * player = gameLocal.GetLocalPlayer();
 			if( player )	{
 			
@@ -159,6 +161,8 @@ void rvWeaponBlaster::Spawn ( void ) {
 	fireForced			= false;
 			
 	Flashlight ( owner->IsFlashlightOn() );
+
+	missile = false;
 }
 
 /*
@@ -351,7 +355,7 @@ stateResult_t rvWeaponBlaster::State_Charge ( const stateParms_t& parms ) {
 				f = idMath::ClampFloat ( chargeGlow[0], chargeGlow[1], f );
 				viewModel->SetShaderParm ( BLASTER_SPARM_CHARGEGLOW, f );
 				
-				if ( !wsfl.attack ) {
+				if ( !(wsfl.attack || wsfl.missile)) {
 					SetState ( "Fire", 0 );
 					return SRESULT_DONE;
 				}
@@ -384,7 +388,7 @@ stateResult_t rvWeaponBlaster::State_Charged ( const stateParms_t& parms ) {
 			return SRESULT_STAGE(CHARGED_WAIT);
 			
 		case CHARGED_WAIT:
-			if ( !wsfl.attack ) {
+			if ( !(wsfl.attack || wsfl.missile)) {
 				fireForced = true;
 				SetState ( "Fire", 0 );
 				return SRESULT_DONE;
@@ -428,14 +432,37 @@ stateResult_t rvWeaponBlaster::State_Fire ( const stateParms_t& parms ) {
 
 
 	
-			if ( gameLocal.time - fireHeldTime > chargeTime ) {	
-				Attack ( true, 25, spread, 0, 0.1f );
-				PlayEffect ( "fx_chargedflash", barrelJointView, false );
-				PlayAnim( ANIMCHANNEL_ALL, "chargedfire", parms.blendFrames );
-			} else {
-				Attack ( false, 1, spread, 0, 1.0f );
-				PlayEffect ( "fx_normalflash", barrelJointView, false );
-				PlayAnim( ANIMCHANNEL_ALL, "fire", parms.blendFrames );
+			if( missile )
+			{
+				if (gameLocal.time - fireHeldTime > chargeTime)
+				{
+					Attack(3, 1, 1, 0, 4.0f);
+					PlayEffect("fx_chargedflash", barrelJointView, false);
+					PlayAnim(ANIMCHANNEL_ALL, "chargedfire", parms.blendFrames);
+					missile = false;
+				}
+				else
+				{
+					Attack(2, 1, 1, 0, 1.0f);
+					PlayEffect("fx_normalflash", barrelJointView, false);
+					PlayAnim(ANIMCHANNEL_ALL, "fire", parms.blendFrames);
+					missile = false;
+				}
+			}
+			else
+			{
+				if (gameLocal.time - fireHeldTime > chargeTime)
+				{
+					Attack(1, 1, 1, 0, 1.0f);
+					PlayEffect("fx_chargedflash", barrelJointView, false);
+					PlayAnim(ANIMCHANNEL_ALL, "chargedfire", parms.blendFrames);
+				}
+				else
+				{
+					Attack(0, 1, 1, 0, 1.0f);
+					PlayEffect("fx_normalflash", barrelJointView, false);
+					PlayAnim(ANIMCHANNEL_ALL, "fire", parms.blendFrames);
+				}
 			}
 			fireHeldTime = 0;
 			
