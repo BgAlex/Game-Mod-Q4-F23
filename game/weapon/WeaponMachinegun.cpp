@@ -282,7 +282,7 @@ stateResult_t rvWeaponMachinegun::State_Idle( const stateParms_t& parms ) {
 
 			// Auto reload?
 			if (AutoReload() && !AmmoInClip() && AmmoAvailable()) {
-				SetState("reload", 2);
+				SetState("Reload", 2);
 				return SRESULT_DONE;
 			}
 			if (wsfl.netReload || (wsfl.reload && AmmoInClip() < ClipSize() && AmmoAvailable() > AmmoInClip())) {
