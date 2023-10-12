@@ -120,8 +120,6 @@ const idEventDef EV_Player_AllowNewObjectives( "<allownewobjectives>" );
 // RAVEN END
 
 
-//ALEX STUFF:
-int energyTanks = 1;
 
 
 CLASS_DECLARATION( idActor, idPlayer )
@@ -171,6 +169,8 @@ CLASS_DECLARATION( idActor, idPlayer )
 	EVENT( EV_Player_SetExtraProjPassEntity,idPlayer::Event_SetExtraProjPassEntity )
 //MCG: direct damage
 	EVENT( EV_Player_DamageEffect,			idPlayer::Event_DamageEffect )
+
+
 END_CLASS
 
 // RAVEN BEGIN
@@ -853,9 +853,10 @@ bool idInventory::Give( idPlayer *owner, const idDict &spawnArgs, const char *st
 	int						max;
 	int						amount;
 
+
 	if ( !idStr::Icmpn( statname, "ammo_", 5 ) ) {
 		i = AmmoIndexForAmmoClass( statname );
-		max = MaxAmmoForAmmoClass( owner, statname );
+		max = MaxAmmoForAmmoClass( owner, statname ) + max_Missiles_mod;
 		amount = atoi( value );
 
 // RAVEN BEGIN
@@ -878,7 +879,7 @@ bool idInventory::Give( idPlayer *owner, const idDict &spawnArgs, const char *st
 		idStr ammoname( statname );
 		ammoname.StripLeading( "start_" );
 		i = AmmoIndexForAmmoClass( ammoname.c_str() );
-		max = MaxAmmoForAmmoClass( owner, ammoname.c_str() );
+		max = MaxAmmoForAmmoClass( owner, ammoname.c_str() ) + max_Missiles_mod;
 		amount = atoi( value );
 
 // RAVEN BEGIN
@@ -904,11 +905,14 @@ bool idInventory::Give( idPlayer *owner, const idDict &spawnArgs, const char *st
 		if ( armor >= maxarmor * 2 ) {
 			return false;
 		}
-	} else 	if ( !idStr::Icmp( statname, "health" ) ) {
-		if ( owner->health >= maxHealth ) {
+	} 
+	else 	if (!idStr::Icmp(statname, "health")) {
+		if (owner->health >= maxHealth) {
 			return false;
 		}
-	} else if ( idStr::FindText( statname, "inclip_" ) == 0 ) {
+	}
+	
+	else if ( idStr::FindText( statname, "inclip_" ) == 0 ) {
 		i = owner->SlotForWeapon ( statname + 7 );
 		if ( i != -1 && !checkOnly ) {
 			// set, don't add. not going over the clip size limit.
@@ -1362,6 +1366,9 @@ idPlayer::idPlayer() {
 	teamAmmoRegenPending	= false;
 	teamDoubler			= NULL;		
 	teamDoublerPending		= false;
+
+	//ALEX STUFF:
+	energyTanks = 1;
 }
 
 /*
@@ -3426,6 +3433,7 @@ void idPlayer::UpdateHudStats( idUserInterface *_hud ) {
 	if ( temp != health ) {		
 		_hud->SetStateInt   ( "player_healthDelta", temp == -1 ? 0 : (temp - health) );
 		_hud->SetStateInt("player_tanks", energyTanks);
+		_hud->SetStateInt("player_tanks_max", inventory.maxEnergyTanks);
 		_hud->SetStateInt	( "player_health", health < -100 ? -100 : health );
 		_hud->SetStateFloat	( "player_healthpct", idMath::ClampFloat ( 0.0f, 1.0f, (float)health / (float)inventory.maxHealth ) );
 		_hud->HandleNamedEvent ( "updateHealth" );
@@ -4117,17 +4125,39 @@ bool idPlayer::Give( const char *statname, const char *value, bool dropped ) {
 		boundaryArmor *= 2;
 	}
 
-	if ( !idStr::Icmp( statname, "health" ) ) {
-		if ( health >= boundaryHealth ) {
+	if (!idStr::Icmp(statname, "energytank"))
+	{
+		inventory.maxEnergyTanks++;
+		health = inventory.maxHealth;
+		energyTanks = inventory.maxEnergyTanks;
+		gameLocal.Printf("Picked up energy tank! Now have: %d\n", inventory.maxEnergyTanks);
+	}
+
+	else if (!idStr::Icmp(statname, "missiletank"))
+	{
+		amount = atoi(value);
+		inventory.max_Missiles_mod += amount;
+	}
+
+	else if ( !idStr::Icmp( statname, "health" ) ) {
+		if ( energyTanks >= inventory.maxEnergyTanks && health >= boundaryHealth ) {
 			return false;
 		}
  		amount = atoi( value );
  		if ( amount ) {
- 			health += amount;
+			if (energyTanks >= inventory.maxEnergyTanks)
+			{
+				health = boundaryHealth;
+				energyTanks = inventory.maxEnergyTanks;
+			}
+			else
+			{
+				health += amount;
 
-			energyTanks += health / boundaryHealth;
-			energyTanks = idMath::ClampInt(0, inventory.maxEnergyTanks, energyTanks );
-			health = health % boundaryHealth;
+				energyTanks += health / boundaryHealth;
+				energyTanks = idMath::ClampInt(0, inventory.maxEnergyTanks, energyTanks);
+				health = health % boundaryHealth;
+			}
 			/*
  			if ( health > boundaryHealth ) {
  				health = boundaryHealth;
@@ -4193,7 +4223,8 @@ bool idPlayer::Give( const char *statname, const char *value, bool dropped ) {
 			}
 		}
 	} else {
- 		return inventory.Give( this, spawnArgs, statname, value, &idealWeapon, true, dropped );
+		gameLocal.Printf("Alex this might be where things are going wrong\n");
+		return inventory.Give( this, spawnArgs, statname, value, &idealWeapon, true, dropped );
 	}
 	return true;
 }
@@ -10113,6 +10144,8 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 	// twhitaker: difficulty levels
 	float modifiedDamageScale = damageScale;
 	
+	gameLocal.Printf("Taking damage debug! Energy Tanks: %d\t Max Tanks: %d\n", energyTanks, inventory.maxEnergyTanks);
+
 	if ( !gameLocal.isMultiplayer ) {
 		if ( inflictor != gameLocal.world ) {
 			modifiedDamageScale *= ( 1.0f + gameLocal.GetDifficultyModifier() );
@@ -10356,7 +10389,8 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 				lastDmgTime = gameLocal.time;
 			}
 		}
-	} else {
+	} 
+	else {
  		// don't accumulate impulses
 		if ( af.IsLoaded() ) {
 			// clear impacts
