@@ -4139,6 +4139,11 @@ bool idPlayer::Give( const char *statname, const char *value, bool dropped ) {
 		inventory.max_Missiles_mod += amount;
 	}
 
+	else if (!idStr::Icmp(statname, "spacejump"))
+	{
+		physicsObj.SetSpaceJump();
+	}
+
 	else if ( !idStr::Icmp( statname, "health" ) ) {
 		if ( energyTanks >= inventory.maxEnergyTanks && health >= boundaryHealth ) {
 			return false;

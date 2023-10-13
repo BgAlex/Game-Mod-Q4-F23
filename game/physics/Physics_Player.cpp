@@ -13,14 +13,16 @@ const float PM_LADDERSPEED		= 100.0f;
 const float PM_STEPSCALE		= 1.0f;
 
 const float PM_ACCELERATE_SP	= 10.0f;
-const float PM_AIRACCELERATE_SP	= 1.0f;
+const float PM_AIRACCELERATE_SP = 8.0f;
+//const float PM_AIRACCELERATE_SP	= 1.0f;
 const float PM_ACCELERATE_MP	= 15.0f;
 const float PM_AIRACCELERATE_MP	= 1.18f;
 const float PM_WATERACCELERATE	= 4.0f;
 const float PM_FLYACCELERATE	= 8.0f;
 
 const float PM_FRICTION			= 6.0f;
-const float PM_AIRFRICTION		= 0.0f;
+const float PM_AIRFRICTION		= 1.0f;
+//const float PM_AIRFRICTION	= 0.0f;
 const float PM_WATERFRICTION	= 2.0f;
 const float PM_FLYFRICTION		= 3.0f;
 const float PM_NOCLIPFRICTION	= 12.0f;
@@ -42,6 +44,9 @@ const int PMF_TIME_LAND			= 32;		// movementTime is time before rejump
 const int PMF_TIME_KNOCKBACK	= 64;		// movementTime is an air-accelerate only time
 const int PMF_TIME_WATERJUMP	= 128;		// movementTime is waterjump
 const int PMF_ALL_TIMES			= (PMF_TIME_WATERJUMP|PMF_TIME_LAND|PMF_TIME_KNOCKBACK);
+
+bool space_jump = false;
+int jump_count = 0;
 
 int c_pmove = 0;
 
@@ -637,6 +642,13 @@ void idPhysics_Player::AirMove( void ) {
 	float		wishspeed;
 	float		scale;
 
+	//ALEX-DEFINED CODE (I MAY BE F---ING STUFF UP)
+	if (space_jump && jump_count < 2)
+	{
+		idPhysics_Player::CheckJump( true );
+	}
+
+
 // RAVEN BEGIN
 // bdube: crouch time
 	// if the player isnt pressing crouch and heading down then accumulate slide time
@@ -698,12 +710,13 @@ void idPhysics_Player::WalkMove( void ) {
 		return;
 	}
 
-	if ( idPhysics_Player::CheckJump() ) {
+	if ( idPhysics_Player::CheckJump( false ) ) {
 		// jumped away
 		if ( waterLevel > WATERLEVEL_FEET ) {
 			idPhysics_Player::WaterMove();
 		}
 		else {
+			gameLocal.Printf("Routing to airmove.\n");
 			idPhysics_Player::AirMove();
 		}
 		return;
@@ -1102,6 +1115,8 @@ void idPhysics_Player::CheckGround( bool checkStuck ) {
 
 	groundPlane = true;
 	walking = true;
+	//ALEX CODE
+	jump_count = 0;
 
 	// hitting solid ground will end a waterjump
 	if ( current.movementFlags & PMF_TIME_WATERJUMP ) {
@@ -1271,31 +1286,37 @@ void idPhysics_Player::CheckLadder( void ) {
 idPhysics_Player::CheckJump
 =============
 */
-bool idPhysics_Player::CheckJump( void ) {
+bool idPhysics_Player::CheckJump( bool air ) {
 	idVec3 addVelocity;
+
+	//gameLocal.Printf("Attempting jump? %d\n", gameLocal.time);
 
 	if ( command.upmove < 10 ) {
 		// not holding jump
 		return false;
 	}
-
+	
 	// must wait for jump to be released
 	if ( current.movementFlags & PMF_JUMP_HELD ) {
 		return false;
 	}
-
+	
+	
 	// don't jump if we can't stand up
 	if ( current.movementFlags & PMF_DUCKED ) {
 		return false;
 	}
+	
 
 	groundPlane = false;		// jumping away
 	walking = false;
 	current.movementFlags |= PMF_JUMP_HELD | PMF_JUMPED;
 
-	addVelocity = 2.0f * maxJumpHeight * -gravityVector;
+	addVelocity = air ? 4.0f * maxJumpHeight * -gravityVector : 2.0f * maxJumpHeight * -gravityVector;
 	addVelocity *= idMath::Sqrt( addVelocity.Normalize() );
 	current.velocity += addVelocity;
+	jump_count++;
+	gameLocal.Printf("Applying jump!\n");
 
 // RAVEN BEGIN
 // bdube: crouch slide, nick maggoire is awesome
@@ -2306,4 +2327,8 @@ void idPhysics_Player::SetClipModelNoLink( idClipModel *model ) {
 		delete clipModel;
 	}
 	clipModel = model;
+}
+
+void idPhysics_Player::SetSpaceJump() {
+	space_jump = true;
 }

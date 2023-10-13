@@ -177,7 +177,7 @@ private:
 // RAVEN END
 	void					CheckDuck( void );
 	void					CheckLadder( void );
-	bool					CheckJump( void );
+	bool					CheckJump( bool air );
 	bool					CheckWaterJump( void );
 	void					SetWaterLevel( void );
 	void					DropTimers( void );
@@ -185,6 +185,9 @@ private:
 
 	float					Pm_Accelerate( void );
 	float					Pm_AirAccelerate( void );
+
+public:
+	void					SetSpaceJump();
 };
 
 ID_INLINE bool idPhysics_Player::IsNoclip( void ) const {
