@@ -137,7 +137,7 @@ void idFreeView::Setup( void ) {
 	b = idBounds( vec3_origin ).Expand( pm_spectatebbox.GetFloat() * 0.5f );
 	clip = new idClipModel( idTraceModel( b ), declManager->FindMaterial( "textures/flesh_boundingbox" ) );
 	physics = new idPhysics_Player();
-	physics->SetSpeed( pm_spectatespeed.GetFloat(), pm_crouchspeed.GetFloat() );
+	physics->SetSpeed( pm_spectatespeed.GetFloat(), pm_crouchspeed.GetFloat(), false );
 	physics->SetClipModelNoLink( clip );
 	physics->SetClipMask( MASK_PLAYERSOLID );
 	physics->SetMovementType( PM_SPECTATOR );	

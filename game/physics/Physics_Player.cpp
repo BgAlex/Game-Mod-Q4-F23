@@ -46,6 +46,7 @@ const int PMF_TIME_WATERJUMP	= 128;		// movementTime is waterjump
 const int PMF_ALL_TIMES			= (PMF_TIME_WATERJUMP|PMF_TIME_LAND|PMF_TIME_KNOCKBACK);
 
 bool space_jump = false;
+bool is_walking = false;
 int jump_count = 0;
 
 int c_pmove = 0;
@@ -1311,8 +1312,22 @@ bool idPhysics_Player::CheckJump( bool air ) {
 	groundPlane = false;		// jumping away
 	walking = false;
 	current.movementFlags |= PMF_JUMP_HELD | PMF_JUMPED;
-
-	addVelocity = air ? 4.0f * maxJumpHeight * -gravityVector : 2.0f * maxJumpHeight * -gravityVector;
+	if (air)
+	{
+		addVelocity = 4.0f * maxJumpHeight * -gravityVector;
+	}
+	else
+	{
+		if (is_walking)
+		{
+			gameLocal.Printf("Side jump\n");
+			addVelocity = command.rightmove > 0 ? 5000.0f * maxJumpHeight * viewRight : 5000.0f * maxJumpHeight * -viewRight;
+		}
+		else
+		{
+			addVelocity = 2.0f * maxJumpHeight * -gravityVector;
+		}
+	}
 	addVelocity *= idMath::Sqrt( addVelocity.Normalize() );
 	current.velocity += addVelocity;
 	jump_count++;
@@ -1836,9 +1851,10 @@ void idPhysics_Player::SetPlayerInput( const usercmd_t &cmd, const idAngles &new
 idPhysics_Player::SetSpeed
 ================
 */
-void idPhysics_Player::SetSpeed( const float newWalkSpeed, const float newCrouchSpeed ) {
+void idPhysics_Player::SetSpeed( const float newWalkSpeed, const float newCrouchSpeed, bool walk_state) {
 	walkSpeed = newWalkSpeed;
 	crouchSpeed = newCrouchSpeed;
+	is_walking = walk_state;
 }
 
 /*

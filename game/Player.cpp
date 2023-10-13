@@ -4228,7 +4228,7 @@ bool idPlayer::Give( const char *statname, const char *value, bool dropped ) {
 			}
 		}
 	} else {
-		gameLocal.Printf("Alex this might be where things are going wrong\n");
+		//gameLocal.Printf("Alex this might be where things are going wrong\n");
 		return inventory.Give( this, spawnArgs, statname, value, &idealWeapon, true, dropped );
 	}
 	return true;
@@ -8815,6 +8815,7 @@ idPlayer::AdjustSpeed
 */
 void idPlayer::AdjustSpeed( void ) {
 	float speed;
+	bool walk_state = false;
 
 	if ( spectating ) {
 		speed = pm_spectatespeed.GetFloat();
@@ -8828,6 +8829,7 @@ void idPlayer::AdjustSpeed( void ) {
 	} else {
 		speed = pm_walkspeed.GetFloat();
 		bobFrac = 0.0f;
+		walk_state = true;
 	}
 
 	speed *= PowerUpModifier(PMOD_SPEED);
@@ -8836,7 +8838,7 @@ void idPlayer::AdjustSpeed( void ) {
 		speed *= 0.33f;
 	}
 
-	physicsObj.SetSpeed( speed, pm_crouchspeed.GetFloat() );
+	physicsObj.SetSpeed( speed, pm_crouchspeed.GetFloat(), walk_state );
 }
 
 /*
@@ -9098,6 +9100,8 @@ void idPlayer::Move( void ) {
 		newEyeOffset = pm_deadviewheight.GetFloat();
 	} else if ( physicsObj.IsCrouching() ) {
 		newEyeOffset = pm_crouchviewheight.GetFloat();
+		//ALEX-DEFINED POTENTIAL SHIT
+		pm_thirdPerson.SetBool( true );
 	} else if ( IsInVehicle ( ) ) {
 		newEyeOffset = 0.0f;
 	} else {

@@ -61,7 +61,7 @@ public:
 	void					Restore( idRestoreGame *savefile );
 
 							// initialisation
-	void					SetSpeed( const float newWalkSpeed, const float newCrouchSpeed );
+	void					SetSpeed( const float newWalkSpeed, const float newCrouchSpeed, bool walk_state );
 	void					SetMaxStepHeight( const float newMaxStepHeight );
 	float					GetMaxStepHeight( void ) const;
 	void					SetMaxJumpHeight( const float newMaxJumpHeight );
