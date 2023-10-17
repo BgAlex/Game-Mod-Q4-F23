@@ -188,6 +188,7 @@ private:
 
 public:
 	void					SetSpaceJump();
+	idVec3					GetGravity();
 };
 
 ID_INLINE bool idPhysics_Player::IsNoclip( void ) const {

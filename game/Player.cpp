@@ -1369,6 +1369,9 @@ idPlayer::idPlayer() {
 
 	//ALEX STUFF:
 	energyTanks = 1;
+	varia = 1;
+	lastBombTime = 0;
+	ballbomb = false;
 }
 
 /*
@@ -1741,6 +1744,15 @@ void idPlayer::Init( void ) {
  	isChatting = false;
 
 	SetInitialHud();
+
+
+
+	//ALEX MOMENT
+	if (gameLocal.FindEntityDef(spawnArgs.GetString("def_bomb_projectile"), false))
+	{
+		bombDict = gameLocal.FindEntityDef(spawnArgs.GetString("def_bomb_projectile"), false)->dict;
+	}
+
 
 	emote = PE_NONE;
 
@@ -4029,11 +4041,19 @@ void idPlayer::FireWeapon( bool missile ) {
 		if ( !noFireWhileSwitching ) {
 			if ( weapon->AmmoInClip() || weapon->AmmoAvailable() ) {
 				pfl.attackHeld = true;
-				if (missile)
+				if ( physicsObj.IsCrouching() )
 				{
-					//gameLocal.Printf("Should be firing a missile now question mark?\n");
+					if (gameLocal.time - lastBombTime > 1000 && ballbomb)
+					{
+						weapon->LaunchProjectiles(bombDict, muzzle, axis, 1, 0, 0, 1.0f);
+						lastBombTime = gameLocal.time;
+					}
+					
 				}
-				weapon->BeginAttack(missile);
+				else
+				{
+					weapon->BeginAttack(missile);
+				}
 			} else {
 				pfl.attackHeld = false;
 				pfl.weaponFired = false;
@@ -4142,6 +4162,16 @@ bool idPlayer::Give( const char *statname, const char *value, bool dropped ) {
 	else if (!idStr::Icmp(statname, "spacejump"))
 	{
 		physicsObj.SetSpaceJump();
+	}
+
+	else if (!idStr::Icmp(statname, "varia"))
+	{
+		varia++;
+	}
+
+	else if (!idStr::Icmp(statname, "ballbomb"))
+	{
+		ballbomb = true;
 	}
 
 	else if ( !idStr::Icmp( statname, "health" ) ) {
@@ -9106,6 +9136,7 @@ void idPlayer::Move( void ) {
 		newEyeOffset = 0.0f;
 	} else {
 		newEyeOffset = pm_normalviewheight.GetFloat();
+		pm_thirdPerson.SetBool(false);
 	}
 
 	if ( EyeHeight() != newEyeOffset ) {
@@ -10347,7 +10378,8 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 		}
 
 		int oldHealth = health;
-		health -= damage;
+		gameLocal.Printf("Varia: %d\n", varia);
+		health -= damage * (1.0 / varia);
 
 		GAMELOG_ADD ( va("player%d_damage_taken", entityNumber ), damage );
 		GAMELOG_ADD ( va("player%d_damage_%s", entityNumber, damageDefName), damage );

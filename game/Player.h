@@ -1159,6 +1159,10 @@ private:
 
 public:
 	int						energyTanks;
+	idDict					bombDict;
+	int						varia;
+	int						lastBombTime;
+	bool					ballbomb;
 	
  	CLASS_STATES_PROTOTYPE( idPlayer );
 };

@@ -1321,7 +1321,14 @@ bool idPhysics_Player::CheckJump( bool air ) {
 		if (is_walking)
 		{
 			gameLocal.Printf("Side jump\n");
-			addVelocity = command.rightmove > 0 ? 5000.0f * maxJumpHeight * viewRight : 5000.0f * maxJumpHeight * -viewRight;
+			if (command.rightmove == 0)
+			{
+				addVelocity = 2.0f * maxJumpHeight * -gravityVector;
+			}
+			else
+			{
+				addVelocity = command.rightmove > 0 ? 5000.0f * maxJumpHeight * viewRight : 5000.0f * maxJumpHeight * -viewRight;
+			}
 		}
 		else
 		{
@@ -2347,4 +2354,9 @@ void idPhysics_Player::SetClipModelNoLink( idClipModel *model ) {
 
 void idPhysics_Player::SetSpaceJump() {
 	space_jump = true;
+}
+
+idVec3 idPhysics_Player::GetGravity()
+{
+	return gravityNormal;
 }

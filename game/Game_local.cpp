@@ -5702,7 +5702,7 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 	if( gameLocal.isMultiplayer ) {
 		damageDef->GetFloat( "attackerPushScale", "2", attackerPushScale );
 	} else {
-		damageDef->GetFloat( "attackerPushScale", "0", attackerPushScale );
+		damageDef->GetFloat( "attackerPushScale", "5", attackerPushScale );
 	}
 
 	if ( radius < 1 ) {
